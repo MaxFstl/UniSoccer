@@ -14,17 +14,49 @@ This repository contains the official PyTorch implementation of paper **"Towards
 - [2024.12] Our pre-print paper is released on arXiv.
 
 ## Requirements
-- Python >= 3.8 (Recommend to use [Anaconda](https://www.anaconda.com/download/#linux) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html))
-- [PyTorch >= 2.0.0](https://pytorch.org/) (If use A100)
-- transformers >= 4.42.3
-- pycocoevalcap >= 1.2
+- Python >= 3.10
+- ffmpeg / ffprobe installed on your system
+- Checkpoints: downstream_commentary_all_open.pth and pretrained_classification.pth
+  from https://huggingface.co/Homie0609/UniSoccer/tree/main
 
-A suitable [conda](https://conda.io/) environment named `UniSoccer` can be created and activated with:
+### Create venv
+Create and activate a standard venv and install requirements with pip.
 
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
-conda env create -f environment.yaml
-conda activate UniSoccer
+
+## Run the highlight pipeline
+
+### 1) Slice full match into clips
+First, split your full match video into 30-second clips:
+
+```bash
+python slice_video.py /path/to/full_match.mp4
 ```
+
+This creates a folder with clips named `clip_001.mp4`, `clip_002.mp4`, etc.
+
+### 2) Detect and extract highlights
+Then run the highlight detection pipeline on the clips directory:
+
+```bash
+python auto_highlights_pipeline.py \
+  --video_dir /path/to/clips_folder \
+  --checkpoint pretrained_classification.pth \
+  --output_dir outputs/auto_highlights
+```
+
+**Arguments:**
+- `--video_dir` (required): Directory containing 30s clips from step 1
+- `--checkpoint` (default: `pretrained_classification.pth`): Path to model checkpoint
+- `--output_dir` (default: `outputs/auto_highlights`): Output directory for extracted clips and JSON
+- `--max_clips` (default: 0, meaning all): Limit number of clips to process
+- `--join`: Optional flag to concatenate all extracted highlights into one compilation video
+- `--commentary`: Optional flag to generate commentary text per extracted highlight clip
 
 ## Train
 

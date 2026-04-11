@@ -9,7 +9,7 @@ from model.matchvoice_model_all_blocks import matchvoice_model_all_blocks
 from model.MatchVision_classifier import MatchVision_Classifier
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
-from transformers import AdamW
+from torch.optim import AdamW
 import torch
 from torch.nn import DataParallel
 import numpy as np

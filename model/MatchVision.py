@@ -1,6 +1,6 @@
 from PIL import Image
 import requests
-from transformers import AutoProcessor, SiglipVisionModel
+from transformers import AutoConfig, AutoProcessor, SiglipVisionModel
 import sys
 from pathlib import Path
 #sys.path.append(str(Path(__file__).parent))
@@ -16,6 +16,11 @@ import torch.utils.checkpoint as checkpoint
 from collections import OrderedDict
 from transformers import AutoTokenizer, SiglipTextModel
 
+
+def _load_siglip_vision_model(model_name: str) -> SiglipVisionModel:
+    cfg = AutoConfig.from_pretrained(model_name).vision_config
+    return SiglipVisionModel.from_pretrained(model_name, config=cfg)
+
 class QuickGELU(nn.Module):
     def forward(self, x):
         return x * torch.sigmoid(1.702 * x)
@@ -23,7 +28,7 @@ class QuickGELU(nn.Module):
 class ResidualAttentionBlock(nn.Module):
     def __init__(self, res_idx, d_model=768, n_head=12, drop_path=0., attn_mask=None, dropout=0., attention_type='divided_space_time',model_name = "google/siglip-base-patch16-224"):
         super().__init__()
-        model = SiglipVisionModel.from_pretrained(model_name)
+        model = _load_siglip_vision_model(model_name)
         vision_model = model.vision_model
 
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
@@ -91,7 +96,7 @@ class VisionTimesformer(nn.Module):
         super().__init__()
 
         self.num_frames = num_frames
-        model = SiglipVisionModel.from_pretrained(model_name)
+        model = _load_siglip_vision_model(model_name)
         
         self.output_dim = output_dim
         self.input_resolution = input_resolution
