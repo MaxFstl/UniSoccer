@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import torch
 from decord import VideoReader
 from einops import rearrange
@@ -127,11 +128,27 @@ def preprocess_window_frames(video_reader: VideoReader, transform, start_sec: fl
     else:
         frame_indices = torch.linspace(start_idx, end_idx, steps=num_frames).round().long().tolist()
     
-    # Load frames and convert from (N, H, W, C) to (N, C, H, W)
-    frames = video_reader.get_batch(frame_indices).permute(0, 3, 1, 2)
-    
+    # Load frames (Decord returns an NDArray-like object). Ensure we have a NumPy array of shape (N, H, W, C)
+    frames_batch = video_reader.get_batch(frame_indices)
+    if hasattr(frames_batch, "asnumpy"):
+        frames_np = frames_batch.asnumpy()
+    elif isinstance(frames_batch, torch.Tensor):
+        # convert torch tensor in (N, C, H, W) or (N, H, W, C) to (N, H, W, C)
+        if frames_batch.ndim == 4 and frames_batch.shape[1] in (1, 3):
+            frames_np = frames_batch.permute(0, 2, 3, 1).cpu().numpy()
+        else:
+            frames_np = frames_batch.cpu().numpy()
+    else:
+        # fallback: try treating it as array-like
+        frames_np = np.asarray(frames_batch)
+
     # Apply image transform to each frame, then batch them
-    frames = torch.cat([transform(images=frame, return_tensors="pt")["pixel_values"] for frame in frames], dim=0)
+    pixel_values_list = []
+    for frame in frames_np:
+        pv = transform(images=frame, return_tensors="pt")["pixel_values"]
+        # pv has shape (1, C, H, W)
+        pixel_values_list.append(pv)
+    frames = torch.cat(pixel_values_list, dim=0)
     
     # Reshape to temporal format (C, T, H, W) and add batch dimension: (1, C, T, H, W)
     return rearrange(frames, "t c h w -> c t h w").unsqueeze(0)
@@ -467,3 +484,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
