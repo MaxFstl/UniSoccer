@@ -273,21 +273,101 @@ def run_gui():
     mid_frame = tk.Frame(root)
     mid_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=6)
 
-    # Header: select-all checkbox and Name label
+    # Search bar: filter clips saved in the output directory by event or filename
+    search_frame = tk.Frame(mid_frame)
+    search_frame.pack(fill=tk.X, padx=2, pady=(0,4))
+
+    tk.Label(search_frame, text="Search output clips:").pack(side=tk.LEFT)
+    search_var = tk.StringVar()
+    search_entry = tk.Entry(search_frame, textvariable=search_var, width=30)
+    search_entry.pack(side=tk.LEFT, padx=(6,4))
+
+    def _populate_search_results(paths: list[str]):
+        """
+        Populate the main listbox with provided file paths.
+        """
+        listbox.delete(0, tk.END)
+        clips_paths.clear()
+        select_all_var.set(0)
+        for p in paths:
+            clips_paths.append(str(p))
+            listbox.insert(tk.END, Path(p).name)
+
+    def _search_output_clips():
+        """
+        Search the output directory (output_var) for clips matching the query.
+        Matches against `event` in `gui_highlights` when available, otherwise against filename.
+        """
+        query = search_var.get().strip().lower()
+        out_dir = Path(output_var.get())
+        if not out_dir.exists():
+            _append_output(f"Output directory not found: {out_dir}")
+            return
+
+        mp4_files = sorted(out_dir.glob("**/*.mp4"))
+        if not query:
+            # empty query -> reset to the directory currently selected (if any)
+            if dir_var.get():
+                populate_listbox(dir_var.get())
+            else:
+                _append_output("Empty search query")
+            return
+
+        results: list[str] = []
+        q = query
+        # First prefer matches by event metadata if available
+        for f in mp4_files:
+            fname = f.name
+            matched = False
+            for h in gui_highlights:
+                try:
+                    h_clip = Path(h.get("clip_path", "")).name
+                    if h_clip == fname and q in h.get("event", "").lower():
+                        results.append(str(f))
+                        matched = True
+                        break
+                except Exception:
+                    continue
+            if matched:
+                continue
+            # Fallback: match filename
+            if q in fname.lower():
+                results.append(str(f))
+
+        if not results:
+            _append_output(f"No results for '{query}' in {out_dir}")
+        _populate_search_results(results)
+
+    def _clear_search():
+        """Clear search box and restore default listing for current clips directory."""
+        search_var.set("")
+        if dir_var.get():
+            populate_listbox(dir_var.get())
+        else:
+            # if no clips dir selected, show files from output dir
+            out_dir = Path(output_var.get())
+            if out_dir.exists():
+                files = sorted(out_dir.glob("**/*.mp4"))
+                _populate_search_results([str(f) for f in files])
+
+    search_btn = tk.Button(search_frame, text="Search", command=_search_output_clips)
+    search_btn.pack(side=tk.LEFT, padx=(2,2))
+    clear_search_btn = tk.Button(search_frame, text="Clear", command=_clear_search)
+    clear_search_btn.pack(side=tk.LEFT)
+
+    # Header above listbox with two columns: select-all checkbox and Name
     header_frame = tk.Frame(mid_frame)
-    header_frame.pack(fill=tk.X, padx=2, pady=(0, 4))
+    header_frame.pack(fill=tk.X, padx=2, pady=(0,4))
 
     select_all_var = tk.IntVar(value=0)
-    
     def _on_select_all_toggled():
-        """Toggle selection of all clips in the listbox."""
         if select_all_var.get():
             listbox.select_set(0, tk.END)
         else:
             listbox.select_clear(0, tk.END)
 
     select_all_cb = tk.Checkbutton(header_frame, variable=select_all_var, command=_on_select_all_toggled)
-    select_all_cb.pack(side=tk.LEFT, padx=(4, 8))
+    select_all_cb.pack(side=tk.LEFT, padx=(4,8))
 
     name_label = tk.Label(header_frame, text="Name", anchor="w")
     name_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
