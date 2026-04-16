@@ -28,7 +28,19 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
+## Import Tkinter for Gui
+1. Install Tcl/Tk (required for Tkinter) and common system fonts:
 
+    sudo pacman -Syu tk ttf-dejavu noto-fonts
+
+2. (Optional) If you want to use the "Segoe UI" font, install it from the AUR with an AUR helper (e.g. `yay`):
+
+    yay -S ttf-ms-win10
+
+3. Verify that Python can import Tkinter:
+
+    python -c "import tkinter; print('tkinter OK')"
+    
 ## Run the highlight pipeline
 
 ### 1) Slice full match into clips
