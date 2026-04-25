@@ -70,20 +70,26 @@ PEAK_TIE_THRESHOLD = 0.01       # Confidence threshold to consider scores tied
 VIDEO_READER_THREADS = 4
 FIXED_THRESHOLD = 0.30
 
+LOW_CONF = 0.30
+MEDIUM_CONF = 0.40
+HIGH_CONF = 0.50
+
 EVENT_MIN_CONFIDENCE = {
-    "goal": 0.30,
-    "penalty": 0.32,
-    "foul lead to penalty": 0.34,
-    "red card": 0.34,
-    "second yellow card": 0.34,
-    "yellow card": 0.32,
-    "saved by goal-keeper": 0.32,
-    "shot off target": 0.34,
-    "corner": 0.33,
-    "free kick": 0.33,
-    "var": 0.42,
-    "injury": 0.45,
-    "substitution": 0.48,
+    "goal": LOW_CONF,
+    "penalty": LOW_CONF,
+    "yellow card": LOW_CONF,
+    "saved by goal-keeper": LOW_CONF,
+
+    "corner": MEDIUM_CONF,
+    "free kick": MEDIUM_CONF,
+    "red card": MEDIUM_CONF,
+    "second yellow card": MEDIUM_CONF,
+
+    "var": HIGH_CONF,
+    "injury": HIGH_CONF,
+    "substitution": HIGH_CONF,
+    "foul lead to penalty": HIGH_CONF,
+    "shot off target": HIGH_CONF,
 }
 
 EVENT_MIN_MARGIN = {
